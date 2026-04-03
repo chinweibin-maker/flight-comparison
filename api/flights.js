@@ -1,29 +1,28 @@
-const fetch = require('node-fetch');
+// 移除 require('node-fetch') 以免环境冲突
 
 module.exports = async (req, res) => {
-    // --- 关键：允许跨域 (CORS) ---
+    // --- 1. 设置跨域头 ---
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+    // 处理预检请求
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
 
+    // --- 2. 获取参数 ---
     const { origin, destination, date } = req.query;
 
-    // 参数校验逻辑
     if (!origin || !destination || !date) {
-        return res.status(400).json({ error: "参数不全喵！需要 origin, destination 和 date" });
+        return res.status(400).json({ error: "Missing parameters" });
     }
 
     try {
-        /**
-         * 💡 这里是模拟的实时航班数据
-         * 前端 script.js 会根据这个 data 数组来画图表和列表
-         */
-        const mockData = {
+        // --- 3. 构造完美的 Mock 数据 ---
+        // 确保数据结构与前端 script.js 里的解析逻辑 100% 匹配
+        const responseData = {
             data: [
                 {
                     id: "1",
@@ -31,7 +30,10 @@ module.exports = async (req, res) => {
                     price: { total: "1250.00", currency: "MYR" },
                     itineraries: [{
                         duration: "PT5H30M",
-                        segments: [{ departure: { at: `${date}T08:30:00` }, arrival: { at: `${date}T14:00:00` } }]
+                        segments: [{ 
+                            departure: { at: `${date}T08:30:00` }, 
+                            arrival: { at: `${date}T14:00:00` } 
+                        }]
                     }]
                 },
                 {
@@ -40,16 +42,22 @@ module.exports = async (req, res) => {
                     price: { total: "1080.00", currency: "MYR" },
                     itineraries: [{
                         duration: "PT5H45M",
-                        segments: [{ departure: { at: `${date}T10:00:00` }, arrival: { at: `${date}T15:45:00` } }]
+                        segments: [{ 
+                            departure: { at: `${date}T10:00:00` }, 
+                            arrival: { at: `${date}T15:45:00` } 
+                        }]
                     }]
                 },
                 {
                     id: "3",
                     validatingAirlineCodes: ["AK"],
-                    price: { total: "580.00", currency: "MYR" },
+                    price: { total: "650.00", currency: "MYR" },
                     itineraries: [{
                         duration: "PT5H35M",
-                        segments: [{ departure: { at: `${date}T13:00:00` }, arrival: { at: `${date}T18:35:00` } }]
+                        segments: [{ 
+                            departure: { at: `${date}T13:00:00` }, 
+                            arrival: { at: `${date}T18:35:00` } 
+                        }]
                     }]
                 },
                 {
@@ -59,17 +67,18 @@ module.exports = async (req, res) => {
                     itineraries: [{
                         duration: "PT10H20M",
                         segments: [
-                            { departure: { at: `${date}T01:00:00` }, arrival: { at: `${date}T06:00:00` } },
-                            { departure: { at: `${date}T08:00:00` }, arrival: { at: `${date}T11:20:00` } }
+                            { departure: { at: `${date}T01:00:00` }, arrival: { at: `${date}T06:00:00` } }
                         ]
                     }]
                 }
             ]
         };
 
-        res.status(200).json(mockData);
+        // --- 4. 返回 JSON ---
+        res.status(200).json(responseData);
 
-    } catch (error) {
-        res.status(500).json({ error: "服务器内部故障", details: error.message });
+    } catch (err) {
+        // 如果还错，输出错误信息
+        res.status(500).json({ error: "Function Crash", message: err.message });
     }
 };
