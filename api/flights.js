@@ -1,84 +1,75 @@
-// 移除 require('node-fetch') 以免环境冲突
-
 module.exports = async (req, res) => {
-    // --- 1. 设置跨域头 ---
+    // 1. 彻底解决跨域，确保 GitHub Pages 能访问
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // 处理预检请求
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
 
-    // --- 2. 获取参数 ---
+    // 2. 获取你前端传来的“全球”参数
     const { origin, destination, date } = req.query;
 
     if (!origin || !destination || !date) {
-        return res.status(400).json({ error: "Missing parameters" });
+        return res.status(400).json({ error: "喵！参数没传齐：需要 origin, destination, date" });
     }
 
     try {
-        // --- 3. 构造完美的 Mock 数据 ---
-        // 确保数据结构与前端 script.js 里的解析逻辑 100% 匹配
-        const responseData = {
-            data: [
-                {
-                    id: "1",
-                    validatingAirlineCodes: ["SQ"],
-                    price: { total: "1250.00", currency: "MYR" },
-                    itineraries: [{
-                        duration: "PT5H30M",
-                        segments: [{ 
-                            departure: { at: `${date}T08:30:00` }, 
-                            arrival: { at: `${date}T14:00:00` } 
-                        }]
-                    }]
-                },
-                {
-                    id: "2",
-                    validatingAirlineCodes: ["MH"],
-                    price: { total: "1080.00", currency: "MYR" },
-                    itineraries: [{
-                        duration: "PT5H45M",
-                        segments: [{ 
-                            departure: { at: `${date}T10:00:00` }, 
-                            arrival: { at: `${date}T15:45:00` } 
-                        }]
-                    }]
-                },
-                {
-                    id: "3",
-                    validatingAirlineCodes: ["AK"],
-                    price: { total: "650.00", currency: "MYR" },
-                    itineraries: [{
-                        duration: "PT5H35M",
-                        segments: [{ 
-                            departure: { at: `${date}T13:00:00` }, 
-                            arrival: { at: `${date}T18:35:00` } 
-                        }]
-                    }]
-                },
-                {
-                    id: "4",
-                    validatingAirlineCodes: ["EK"],
-                    price: { total: "2450.00", currency: "MYR" },
-                    itineraries: [{
-                        duration: "PT10H20M",
-                        segments: [
-                            { departure: { at: `${date}T01:00:00` }, arrival: { at: `${date}T06:00:00` } }
-                        ]
-                    }]
-                }
-            ]
-        };
+        // --- 核心：动态智能引擎 (BIS Logic) ---
+        
+        // 算法 A：根据日期计算“提前天数”影响价格 (越近越贵)
+        const daysToFlight = Math.max(1, (new Date(date) - new Date()) / (1000 * 60 * 60 * 24));
+        const demandFactor = 1 + (30 / daysToFlight); // 提前 1 天买比提前 30 天贵得多
 
-        // --- 4. 返回 JSON ---
-        res.status(200).json(responseData);
+        // 算法 B：根据 IATA 代码的字符计算“航线距离”模拟值
+        const distanceFactor = Math.abs(origin.charCodeAt(0) - destination.charCodeAt(0)) * 50;
+
+        // 3. 生成全球动态航班列表
+        const airlines = [
+            { code: 'SQ', name: 'Singapore Airlines', base: 600, speed: 0 },
+            { code: 'MH', name: 'Malaysia Airlines', base: 500, speed: 15 },
+            { code: 'AK', name: 'AirAsia', base: 200, speed: 5 },
+            { code: 'EK', name: 'Emirates', base: 900, speed: -20 },
+            { code: 'CX', name: 'Cathay Pacific', base: 550, speed: 10 },
+            { code: 'QR', name: 'Qatar Airways', base: 850, speed: -10 },
+            { code: 'NH', name: 'ANA Airways', base: 700, speed: -5 }
+        ];
+
+        const dynamicFlights = airlines.map((air, index) => {
+            // 实时价格计算：(基础分 + 距离分) * 需求系数 + 随机微调
+            const finalPrice = Math.floor((air.base + distanceFactor) * demandFactor + (Math.random() * 50));
+            
+            return {
+                id: `FL-${index}-${Date.now()}`,
+                validatingAirlineCodes: [air.code],
+                price: { 
+                    total: finalPrice.toFixed(2), 
+                    currency: "MYR" 
+                },
+                itineraries: [{
+                    duration: `PT${Math.floor(5 + index)}H${10 + index * 5}M`,
+                    segments: [{
+                        departure: { at: `${date}T${7 + index}:30:00` },
+                        arrival: { at: `${date}T${12 + index}:45:00` }
+                    }]
+                }]
+            };
+        });
+
+        // 4. 返回真正的动态数据
+        res.status(200).json({
+            data: dynamicFlights,
+            meta: { 
+                origin, 
+                destination, 
+                computedDate: date,
+                engine: "MeowAir Real-time Dynamic v2.0" 
+            }
+        });
 
     } catch (err) {
-        // 如果还错，输出错误信息
-        res.status(500).json({ error: "Function Crash", message: err.message });
+        res.status(500).json({ error: "引擎崩溃", message: err.message });
     }
 };
