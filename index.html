@@ -4,385 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
-    <title>FlightGlobal Pro v12.0 | 企业级航班搜索系统</title>
+    <title>FlightGlobal Pro | 全球航班比价中心</title>
     
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        :root {
-            --primary: #2563eb; --secondary: #7c3aed; --bg: #f8fafc;
-            --card-bg: #ffffff; --text-main: #1e293b; --text-muted: #64748b;
-            --border: #e2e8f0; --accent: #f59e0b; --danger: #ef4444;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        [data-theme="dark"] {
-            --bg: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc;
-            --text-muted: #94a3b8; --border: #334155;
-        }
-
-        * { box-sizing: border-box; }
-        body { 
-            font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg); 
-            color: var(--text-main); margin: 0; transition: var(--transition); line-height: 1.5;
-        }
-
-        nav {
-            background: var(--card-bg); padding: 1rem 2rem; display: flex;
-            justify-content: space-between; align-items: center; position: sticky;
-            top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 1px solid var(--border);
-        }
-        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; }
-
-        .container { max-width: 1400px; margin: 2rem auto; padding: 0 1rem; display: grid; grid-template-columns: 320px 1fr; gap: 2rem; }
-
-        aside { display: flex; flex-direction: column; gap: 1.5rem; }
-        .card { background: var(--card-bg); border-radius: 1rem; padding: 1.5rem; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-muted); }
-        input, select { width: 100%; padding: 0.7rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); outline: none; }
-        input:disabled, button:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .btn { padding: 0.8rem; border-radius: 0.6rem; border: none; cursor: pointer; font-weight: 700; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-        .btn-primary { background: var(--primary); color: white; width: 100%; }
-        .btn-primary:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
-
-        /* Loading Overlay 优化 */
-        #loading-overlay { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(15, 23, 42, 0.8); z-index: 1000; justify-content: center; align-items: center; 
-            flex-direction: column; color: white; backdrop-filter: blur(4px);
-        }
-        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* 航班列表卡片 */
-        .flight-list { display: flex; flex-direction: column; gap: 1rem; }
-        .flight-card { 
-            background: var(--card-bg); border-radius: 1rem; padding: 1.5rem; border: 1px solid var(--border);
-            display: grid; grid-template-columns: 120px 1fr 150px 160px; align-items: center; gap: 1.5rem;
-        }
-        
-        .airline-info { display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .airline-code-badge { background: var(--bg); padding: 5px 10px; border-radius: 6px; font-weight: 800; color: var(--primary); margin-top: 5px; font-size: 0.9rem; }
-        .airline-name { font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
-
-        .time-display b { font-size: 1.4rem; letter-spacing: -0.5px; }
-        .duration-tag { font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 2px; }
-
-        .price-display { text-align: right; }
-        .price-val { font-size: 1.8rem; font-weight: 900; color: var(--accent); }
-
-        /* Empty State & Error State */
-        .empty-state { text-align: center; padding: 3rem; background: var(--card-bg); border-radius: 1rem; border: 2px dashed var(--border); }
-        .empty-state i { font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem; }
-        .error-card { background: #fef2f2; border: 1px solid #fee2e2; color: var(--danger); padding: 1.5rem; border-radius: 1rem; text-align: center; }
-
-        @media (max-width: 950px) {
-            .container { grid-template-columns: 1fr; }
-            .flight-card { grid-template-columns: 1fr 1fr; }
-        }
-    </style>
 </head>
 <body data-theme="light">
 
-<div id="loading-overlay">
-    <div class="spinner"></div>
-    <p style="margin-top: 20px; font-weight: 600; letter-spacing: 1px;">正在同步全球航班数据...</p>
-</div>
-
-<nav>
-    <div class="logo"><i class="fas fa-globe-asia"></i> <span>FlightGlobal Pro</span></div>
-    <div style="display:flex; gap:12px; align-items: center;">
-        <select id="currencyPref" onchange="renderFlights()" style="width: auto; padding: 5px; border-radius: 4px;">
-            <option value="MYR">MYR (RM)</option>
-            <option value="USD">USD ($)</option>
-        </select>
-        <button class="btn" style="background:none; border:1px solid var(--border); color: var(--text-main);" onclick="toggleTheme()"><i class="fas fa-moon"></i></button>
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+        <p>正在同步全球 GDS 数据...</p>
     </div>
-</nav>
 
-<div class="container">
-    <aside>
-        <div class="card">
-            <h3><i class="fas fa-search"></i> 航线搜索</h3>
-            <div class="form-group">
-                <label>出发地 (IATA)</label>
-                <input type="text" id="originInput" placeholder="KUL" maxlength="3">
-            </div>
-            <div class="form-group">
-                <label>目的地 (IATA)</label>
-                <input type="text" id="destInput" placeholder="NRT" maxlength="3">
-            </div>
-            <div class="form-group">
-                <label>出发日期</label>
-                <input type="date" id="dateInput">
-            </div>
-            <button class="btn btn-primary" id="searchBtn" onclick="handleSearch()">
-                <i class="fas fa-rocket"></i> 立即搜索
-            </button>
-        </div>
-
-        <div class="card">
-            <h3><i class="fas fa-sort-amount-down"></i> 智能排序</h3>
-            <select id="sortSelect" onchange="sortData()">
-                <option value="price_asc">价格：由低到高</option>
-                <option value="duration_asc">时长：由短到长</option>
-            </select>
-        </div>
-    </aside>
-
-    <main>
-        <div class="card" style="margin-bottom: 20px; height: 260px;">
-            <canvas id="marketChart"></canvas>
-        </div>
-        <div id="flightContainer">
-            <div class="empty-state">
-                <i class="fas fa-plane"></i>
-                <h3>准备开始您的旅程</h3>
-                <p>请输入出发地、目的地及日期进行实时比价</p>
+    <nav>
+        <div class="nav-container">
+            <div class="logo"><i class="fas fa-globe-americas"></i> FlightGlobal <span>Pro</span></div>
+            <div class="nav-tools">
+                <select id="currency-select">
+                    <option value="MYR">MYR (RM)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="CNY">CNY (¥)</option>
+                </select>
+                <button id="theme-toggle" class="icon-btn"><i class="fas fa-moon"></i></button>
             </div>
         </div>
-    </main>
-</div>
+    </nav>
 
-<script>
-    /**
-     * 1. [新增] 航空公司全称映射表 (Airline Code Mapping)
-     */
-    const AIRLINE_NAMES = {
-        'MH': 'Malaysia Airlines',
-        'SQ': 'Singapore Airlines',
-        'EK': 'Emirates',
-        'QR': 'Qatar Airways',
-        'CX': 'Cathay Pacific',
-        'NH': 'ANA All Nippon Airways',
-        'JL': 'Japan Airlines',
-        'AK': 'AirAsia',
-        'D7': 'AirAsia X',
-        'OD': 'Batik Air Malaysia',
-        'FY': 'Firefly',
-        'TR': 'Scoot',
-        'TG': 'Thai Airways',
-        'CI': 'China Airlines'
-    };
-
-    /**
-     * 2. [新增] API 基础配置
-     */
-    const API_BASE = "https://YOUR-VERCEL-URL/api/flights"; // 请替换为真实接口
-
-    let globalFlightData = []; 
-    let chartInstance = null;
-
-    /**
-     * 3. [新增] 页面初始化：读取 URL 参数并自动搜索
-     */
-    window.onload = () => {
-        const params = new URLSearchParams(window.location.search);
-        const origin = params.get('origin');
-        const dest = params.get('destination');
-        const date = params.get('date');
-
-        if (origin && dest && date) {
-            document.getElementById('originInput').value = origin;
-            document.getElementById('destInput').value = dest;
-            document.getElementById('dateInput').value = date;
-            handleSearch();
-        }
-    };
-
-    /**
-     * 4. [重构] 核心逻辑拆分：fetchFlights
-     */
-    async function handleSearch() {
-        const origin = document.getElementById('originInput').value.toUpperCase();
-        const dest = document.getElementById('destInput').value.toUpperCase();
-        const date = document.getElementById('dateInput').value;
-        const btn = document.getElementById('searchBtn');
-
-        if (!origin || !dest || !date) {
-            alert("请完整填写航线信息。");
-            return;
-        }
-
-        // 优化 Loading UX：防止重复点击
-        btn.disabled = true;
-        document.getElementById('loading-overlay').style.display = 'flex';
-
-        try {
-            const url = `${API_BASE}?origin=${origin}&destination=${dest}&date=${date}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("API_ERROR");
-
-            const rawData = await response.json();
-            
-            // 模块化调用：解析数据
-            globalFlightData = parseFlightData(rawData.data || rawData, { origin, dest, date });
-            
-            // 模块化调用：排序与渲染
-            sortData();
-
-        } catch (error) {
-            showErrorUI();
-        } finally {
-            document.getElementById('loading-overlay').style.display = 'none';
-            btn.disabled = false;
-        }
-    }
-
-    /**
-     * 5. [重构] 逻辑拆分：parseFlightData (数据清洗)
-     */
-    function parseFlightData(data, searchParams) {
-        if (!Array.isArray(data)) return [];
-
-        return data.map(item => {
-            const itinerary = item.itineraries[0];
-            const segments = itinerary.segments;
-            const code = item.validatingAirlineCodes[0];
-
-            return {
-                airlineCode: code,
-                airlineName: AIRLINE_NAMES[code] || `Airline ${code}`,
-                price: parseFloat(item.price.total),
-                currency: item.price.currency,
-                // [优化] ISO 8601 时长转换
-                durationRaw: itinerary.duration, 
-                durationFormatted: formatISO8601Duration(itinerary.duration),
-                durationMinutes: convertDurationToMinutes(itinerary.duration),
-                departure: segments[0].departure.at,
-                arrival: segments[segments.length - 1].arrival.at,
-                isDirect: segments.length === 1,
-                params: searchParams
-            };
-        });
-    }
-
-    /**
-     * 6. [重构] 逻辑拆分：renderFlights (UI 渲染)
-     */
-    function renderFlights() {
-        const container = document.getElementById('flightContainer');
-        const currencyPref = document.getElementById('currencyPref').value;
-
-        if (globalFlightData.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-search-minus"></i>
-                    <h3>未找到相关航班</h3>
-                    <p>请尝试更换日期或搜索临近机场</p>
-                </div>`;
-            return;
-        }
-
-        // 使用 Intl.NumberFormat 格式化价格
-        const formatter = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currencyPref
-        });
-
-        container.innerHTML = globalFlightData.map(f => {
-            const gFlightsUrl = `https://www.google.com/flights?q=${f.params.origin}+to+${f.params.dest}+${f.params.date}`;
-            
-            return `
-                <div class="flight-card">
-                    <div class="airline-info">
-                        <span class="airline-name">${f.airlineName}</span>
-                        <span class="airline-code-badge">${f.airlineCode}</span>
-                    </div>
-                    <div class="time-display">
-                        <b>${extractTime(f.departure)} — ${extractTime(f.arrival)}</b>
-                        <span class="duration-tag">${f.durationFormatted} | ${f.isDirect ? '直飞' : '中转'}</span>
-                    </div>
-                    <div class="price-display">
-                        <div class="price-val">${formatter.format(f.price)}</div>
-                        <small style="color:var(--text-muted)">含税总价</small>
-                    </div>
-                    <div style="text-align:right;">
-                        <a href="${gFlightsUrl}" target="_blank" class="btn btn-primary">
-                            预订 <i class="fas fa-external-link-alt"></i>
-                        </a>
-                    </div>
+    <div class="main-layout">
+        <aside class="sidebar">
+            <section class="search-card">
+                <h3><i class="fas fa-search"></i> 航线搜索</h3>
+                <div class="input-group">
+                    <label>出发地 (IATA)</label>
+                    <input type="text" id="origin" placeholder="例如: KUL" maxlength="3">
                 </div>
-            `;
-        }).join('');
+                <div class="input-group">
+                    <label>目的地 (IATA)</label>
+                    <input type="text" id="destination" placeholder="例如: NRT" maxlength="3">
+                </div>
+                <div class="input-group">
+                    <label>出发日期</label>
+                    <input type="date" id="dep-date">
+                </div>
+                <button id="search-btn" class="primary-btn">立即搜索</button>
+            </section>
 
-        updatePriceChart(currencyPref);
-    }
+            <section class="filter-card">
+                <h3><i class="fas fa-sort-amount-down"></i> 智能排序</h3>
+                <select id="sort-select">
+                    <option value="price_asc">价格：从低到高</option>
+                    <option value="duration_asc">时长：从短到长</option>
+                </select>
+            </section>
+        </aside>
 
-    /**
-     * 7. 格式化工具函数 (时、分、秒处理)
-     */
-    function formatISO8601Duration(pt) {
-        const hours = pt.match(/(\d+)H/);
-        const mins = pt.match(/(\d+)M/);
-        let res = "";
-        if (hours) res += `${hours[1]}h `;
-        if (mins) res += `${mins[1]}m`;
-        return res.trim();
-    }
+        <main class="content">
+            <div class="chart-container card">
+                <h3><i class="fas fa-chart-bar"></i> 实时价格波动分析</h3>
+                <div class="canvas-wrapper">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
 
-    function convertDurationToMinutes(pt) {
-        const hours = pt.match(/(\d+)H/);
-        const mins = pt.match(/(\d+)M/);
-        const h = hours ? parseInt(hours[1]) : 0;
-        const m = mins ? parseInt(mins[1]) : 0;
-        return (h * 60) + m;
-    }
+            <div id="flight-results" class="results-grid">
+                <div class="empty-state">
+                    <i class="fas fa-plane-departure"></i>
+                    <p>请输入行程信息并点击搜索</p>
+                </div>
+            </div>
+        </main>
+    </div>
 
-    function extractTime(isoStr) {
-        // [优化] 转换为本地时间展示 (HH:mm)
-        const d = new Date(isoStr);
-        return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    }
-
-    function sortData() {
-        const val = document.getElementById('sortSelect').value;
-        if (val === 'price_asc') globalFlightData.sort((a,b) => a.price - b.price);
-        if (val === 'duration_asc') globalFlightData.sort((a,b) => a.durationMinutes - b.durationMinutes);
-        renderFlights();
-    }
-
-    function showErrorUI() {
-        document.getElementById('flightContainer').innerHTML = `
-            <div class="error-card">
-                <i class="fas fa-exclamation-circle fa-2x"></i>
-                <h3>航班加载失败</h3>
-                <p>由于 API 限制或网络连接问题，无法获取数据。请点击按钮重试。</p>
-                <button class="btn btn-primary" style="width:200px; margin: 10px auto;" onclick="handleSearch()">重试</button>
-            </div>`;
-    }
-
-    /**
-     * 8. Chart.js 可视化
-     */
-    function updatePriceChart(curr) {
-        const ctx = document.getElementById('marketChart').getContext('2d');
-        if (chartInstance) chartInstance.destroy();
-
-        const topData = globalFlightData.slice(0, 7);
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: topData.map(f => f.airlineCode),
-                datasets: [{
-                    label: `各航司最低价 (${curr})`,
-                    data: topData.map(f => f.price),
-                    backgroundColor: '#2563eb',
-                    borderRadius: 4
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-        });
-    }
-
-    function toggleTheme() {
-        const b = document.body;
-        b.setAttribute('data-theme', b.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
-    }
-</script>
+    <script src="script.js"></script>
 </body>
 </html>
